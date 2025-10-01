@@ -21,6 +21,11 @@ public class Fireball : MonoBehaviour
     public GameObject impactEffect; // Optional impact VFX
     public LayerMask collisionLayers = -1; // What layers the fireball collides with
     
+    [Header("Damage")]
+    public float baseDamage = 20f; // Base damage when not charged
+    public float chargedDamageMultiplier = 2f; // Damage multiplier for charged fireballs
+    public LayerMask damageLayers = -1; // What layers can be damaged
+    
     private float timeAlive = 0f;
     private Rigidbody rb;
     private Transform sphereChild; // Reference to the sphere child object
@@ -43,6 +48,7 @@ public class Fireball : MonoBehaviour
         // Configure rigidbody
         rb.useGravity = false; // Fireballs don't fall
         rb.interpolation = RigidbodyInterpolation.Interpolate; // Smooth movement
+        rb.isKinematic = false; // Ensure it's not kinematic so we can set velocity
         
         // Set initial velocity
         rb.linearVelocity = direction.normalized * speed;
@@ -133,13 +139,32 @@ public class Fireball : MonoBehaviour
             Instantiate(impactEffect, transform.position, Quaternion.identity);
         }
         
-        // Optional: Add damage logic here
-        // Example: hitObject.GetComponent<Health>()?.TakeDamage(damage);
+        // Deal damage to characters
+        BaseCharacter character = hitObject.GetComponent<BaseCharacter>();
+        if (character != null)
+        {
+            // Check if we can damage this character
+            if (((1 << hitObject.gameObject.layer) & damageLayers) != 0)
+            {
+                float damage = CalculateDamage();
+                character.TakeDamage(damage);
+                
+                Debug.Log($"Fireball hit {hitObject.name} for {damage} damage!");
+            }
+        }
         
         if (destroyOnCollision)
         {
             Destroy(gameObject);
         }
+    }
+    
+    float CalculateDamage()
+    {
+        // Calculate damage based on size (charge level)
+        float chargeLevel = size / 1f; // Normalize size to charge level
+        float damage = baseDamage * (1f + (chargeLevel - 1f) * chargedDamageMultiplier);
+        return damage;
     }
     
     // Public methods for external configuration

@@ -61,7 +61,7 @@ public class FireballLauncher : MonoBehaviour
             targetCamera = Camera.main;
             if (targetCamera == null)
             {
-                targetCamera = FindObjectOfType<Camera>();
+                targetCamera = FindFirstObjectByType<Camera>();
             }
         }
         

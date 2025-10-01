@@ -33,7 +33,7 @@ public class CameraFollow : MonoBehaviour
             else
             {
                 // Fallback: find PlayerController component
-                PlayerController playerController = FindObjectOfType<PlayerController>();
+                PlayerController playerController = FindFirstObjectByType<PlayerController>();
                 if (playerController != null)
                 {
                     target = playerController.transform;

@@ -147,6 +147,7 @@ GameObject:
   - component: {fileID: 8630473253209176533}
   - component: {fileID: 3252077613349208612}
   - component: {fileID: 3937359792041006731}
+  - component: {fileID: 33363713029229158}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -225,6 +226,13 @@ MonoBehaviour:
   fireballSpeed: 25
   fireballLifetime: 1
   fireballSize: 1
+  enableChargeAttack: 1
+  chargeTime: 2
+  maxChargedSize: 3
+  minChargeTime: 0.2
+  chargedSpeedMultiplier: 0.8
+  spawnDistanceInFront: 1.5
+  usePlayerFacing: 1
   fireRate: 0.1
   fireballCollisionLayers:
     serializedVersion: 2
@@ -235,6 +243,37 @@ MonoBehaviour:
   fireballHeight: 0
   showDebugRay: 0
   enableDebugLog: 0
+--- !u!114 &33363713029229158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6904130213923167972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 839a38ed42aef6441a1e0fcc8482d5a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacter
+  maxHealth: 100
+  currentHealth: 0
+  isDead: 0
+  healthBarPrefab: {fileID: 7227632667519885519, guid: 605097fd62eed9f4f87819e7f291fe3f, type: 3}
+  healthBarOffset: {x: 0, y: 1.5, z: 0}
+  healthBarScale: 1
+  contactDamage: 10
+  contactCooldown: 1
+  damageLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  deathEffect: {fileID: 0}
+  damageEffect: {fileID: 0}
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  damageFlashDuration: 0.1
+  showDebugInfo: 0
+  playerMaxHealth: 100
+  playerContactDamage: 5
+  playerHealthBarColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!1 &8441347116640962945
 GameObject:
   m_ObjectHideFlags: 0
