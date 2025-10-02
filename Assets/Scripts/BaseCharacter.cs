@@ -12,14 +12,14 @@ public class BaseCharacter : MonoBehaviour
     public bool isDead = false;
     
     [Header("Health Bar UI")]
-    public GameObject healthBarPrefab; // Prefab for health bar UI
-    public Vector3 healthBarOffset = new Vector3(0, 1.5f, 0); // Offset above character
-    public float healthBarScale = 1f; // Scale of the health bar
+    public Image healthBarFill; // Reference to the foreground health bar image
+    public Color healthBarColor = Color.green; // Color of the health bar
+    
     
     [Header("Damage Settings")]
     public float contactDamage = 10f; // Damage dealt on contact
     public float contactCooldown = 1f; // Time between contact damage
-    public LayerMask damageLayers = -1; // What layers can be damaged by this character
+    public string[] damageableTags = {"Enemy"}; // What tags can be damaged by this character
     
     [Header("Visual Effects")]
     public GameObject deathEffect; // Effect to spawn on death
@@ -31,9 +31,6 @@ public class BaseCharacter : MonoBehaviour
     public bool showDebugInfo = false;
     
     // Private variables
-    private GameObject healthBarInstance;
-    private Slider healthBarSlider;
-    private Image healthBarFill;
     private float lastContactDamageTime = 0f;
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
@@ -57,11 +54,9 @@ public class BaseCharacter : MonoBehaviour
             originalColor = spriteRenderer.color;
         }
         
-        // Create health bar UI
-        CreateHealthBar();
-        
         // Initialize health bar
         UpdateHealthBar();
+        
     }
     
     void Update()
@@ -76,108 +71,8 @@ public class BaseCharacter : MonoBehaviour
             }
         }
         
-        // Update health bar position
-        if (healthBarInstance != null)
-        {
-            healthBarInstance.transform.position = transform.position + healthBarOffset;
-        }
     }
     
-    void CreateHealthBar()
-    {
-        if (healthBarPrefab == null)
-        {
-            // Create a simple health bar if no prefab is assigned
-            CreateDefaultHealthBar();
-        }
-        else
-        {
-            // Use the assigned prefab
-            healthBarInstance = Instantiate(healthBarPrefab, transform.position + healthBarOffset, Quaternion.identity);
-            healthBarInstance.transform.SetParent(transform);
-            healthBarInstance.transform.localScale = Vector3.one * healthBarScale;
-            
-            // Find the slider component
-            healthBarSlider = healthBarInstance.GetComponentInChildren<Slider>();
-            if (healthBarSlider != null)
-            {
-                healthBarFill = healthBarSlider.fillRect.GetComponent<Image>();
-            }
-        }
-    }
-    
-    void CreateDefaultHealthBar()
-    {
-        // Create a simple health bar UI
-        GameObject canvas = new GameObject("HealthBarCanvas");
-        canvas.transform.SetParent(transform);
-        canvas.transform.localPosition = healthBarOffset;
-        canvas.transform.localScale = Vector3.one * healthBarScale;
-        
-        Canvas canvasComponent = canvas.AddComponent<Canvas>();
-        canvasComponent.renderMode = RenderMode.WorldSpace;
-        canvasComponent.sortingOrder = 10; // Above other sprites
-        
-        // Create slider
-        GameObject sliderObj = new GameObject("HealthBar");
-        sliderObj.transform.SetParent(canvas.transform);
-        sliderObj.transform.localPosition = Vector3.zero;
-        sliderObj.transform.localScale = Vector3.one;
-        
-        healthBarSlider = sliderObj.AddComponent<Slider>();
-        healthBarSlider.minValue = 0f;
-        healthBarSlider.maxValue = 1f;
-        healthBarSlider.value = 1f;
-        
-        // Create background
-        GameObject background = new GameObject("Background");
-        background.transform.SetParent(sliderObj.transform);
-        background.transform.localPosition = Vector3.zero;
-        background.transform.localScale = Vector3.one;
-        
-        Image bgImage = background.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        RectTransform bgRect = background.GetComponent<RectTransform>();
-        bgRect.anchorMin = Vector2.zero;
-        bgRect.anchorMax = Vector2.one;
-        bgRect.sizeDelta = Vector2.zero;
-        bgRect.anchoredPosition = Vector2.zero;
-        
-        // Create fill area
-        GameObject fillArea = new GameObject("Fill Area");
-        fillArea.transform.SetParent(sliderObj.transform);
-        fillArea.transform.localPosition = Vector3.zero;
-        fillArea.transform.localScale = Vector3.one;
-        
-        RectTransform fillAreaRect = fillArea.GetComponent<RectTransform>();
-        fillAreaRect.anchorMin = Vector2.zero;
-        fillAreaRect.anchorMax = Vector2.one;
-        fillAreaRect.sizeDelta = Vector2.zero;
-        fillAreaRect.anchoredPosition = Vector2.zero;
-        
-        // Create fill
-        GameObject fill = new GameObject("Fill");
-        fill.transform.SetParent(fillArea.transform);
-        fill.transform.localPosition = Vector3.zero;
-        fill.transform.localScale = Vector3.one;
-        
-        healthBarFill = fill.AddComponent<Image>();
-        healthBarFill.color = GetHealthBarColor();
-        
-        RectTransform fillRect = fill.GetComponent<RectTransform>();
-        fillRect.anchorMin = Vector2.zero;
-        fillRect.anchorMax = Vector2.one;
-        fillRect.sizeDelta = Vector2.zero;
-        fillRect.anchoredPosition = Vector2.zero;
-        
-        healthBarInstance = canvas;
-    }
-    
-    protected virtual Color GetHealthBarColor()
-    {
-        // Override this in derived classes for different colors
-        return Color.green;
-    }
     
     public void TakeDamage(float damage)
     {
@@ -225,6 +120,7 @@ public class BaseCharacter : MonoBehaviour
         currentHealth += amount;
         currentHealth = Mathf.Min(maxHealth, currentHealth);
         
+        // Update health bar
         UpdateHealthBar();
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
         
@@ -236,15 +132,23 @@ public class BaseCharacter : MonoBehaviour
     
     void UpdateHealthBar()
     {
-        if (healthBarSlider != null)
+        if (healthBarFill != null)
         {
             float healthPercentage = currentHealth / maxHealth;
-            healthBarSlider.value = healthPercentage;
+            healthBarFill.fillAmount = healthPercentage;
             
-            // Update color based on health
-            if (healthBarFill != null)
+            // Update color based on health percentage
+            if (healthPercentage > 0.6f)
             {
-                healthBarFill.color = GetHealthBarColor();
+                healthBarFill.color = Color.green;
+            }
+            else if (healthPercentage > 0.3f)
+            {
+                healthBarFill.color = Color.yellow;
+            }
+            else
+            {
+                healthBarFill.color = Color.red;
             }
         }
     }
@@ -259,10 +163,10 @@ public class BaseCharacter : MonoBehaviour
             Instantiate(deathEffect, transform.position, Quaternion.identity);
         }
         
-        // Hide health bar
-        if (healthBarInstance != null)
+        // Hide health bar on death
+        if (healthBarFill != null)
         {
-            healthBarInstance.SetActive(false);
+            healthBarFill.gameObject.SetActive(false);
         }
         
         // Trigger death event
@@ -272,6 +176,9 @@ public class BaseCharacter : MonoBehaviour
         {
             Debug.Log($"{gameObject.name} has died!");
         }
+        
+        // Destroy the character after a short delay to allow death effects to play
+        Destroy(gameObject, 0.1f);
     }
     
     public float GetHealthPercentage()
@@ -284,6 +191,42 @@ public class BaseCharacter : MonoBehaviour
         return !isDead && currentHealth > 0f;
     }
     
+    bool CanDamageTarget(GameObject target)
+    {
+        // Get our tag and target tag
+        string ourTag = gameObject.tag;
+        string targetTag = target.tag;
+        
+        // Allied characters don't damage other Allied characters
+        if (ourTag == "Allied" && targetTag == "Allied")
+        {
+            return false;
+        }
+        
+        // Enemy characters don't damage other Enemy characters
+        if (ourTag == "Enemy" && targetTag == "Enemy")
+        {
+            return false;
+        }
+        
+        // Friendly characters don't damage other Friendly characters
+        if (ourTag == "Friendly" && targetTag == "Friendly")
+        {
+            return false;
+        }
+        
+        // Check if target tag is in our damageable tags list
+        foreach (string damageableTag in damageableTags)
+        {
+            if (targetTag == damageableTag)
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     void OnTriggerEnter2D(Collider2D other)
     {
         // Handle contact damage
@@ -292,8 +235,8 @@ public class BaseCharacter : MonoBehaviour
             BaseCharacter otherCharacter = other.GetComponent<BaseCharacter>();
             if (otherCharacter != null && otherCharacter != this)
             {
-                // Check if we can damage this character
-                if (((1 << other.gameObject.layer) & damageLayers) != 0)
+                // Check if we can damage this character based on tags
+                if (CanDamageTarget(other.gameObject))
                 {
                     otherCharacter.TakeDamage(contactDamage);
                     lastContactDamageTime = Time.time;
@@ -307,12 +250,4 @@ public class BaseCharacter : MonoBehaviour
         }
     }
     
-    void OnDestroy()
-    {
-        // Clean up health bar
-        if (healthBarInstance != null)
-        {
-            Destroy(healthBarInstance);
-        }
-    }
 }

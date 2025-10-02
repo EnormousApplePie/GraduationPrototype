@@ -6,11 +6,11 @@ using UnityEngine;
 public class PlayerCharacter : BaseCharacter
 {
     [Header("Player Settings")]
-    public float playerMaxHealth = 100f;
     public float playerContactDamage = 5f; // Lower contact damage for player
     
     [Header("Player Health Bar")]
     public Color playerHealthBarColor = Color.green;
+    
     
     private PlayerController playerController;
     private FireballLauncher fireballLauncher;
@@ -18,8 +18,8 @@ public class PlayerCharacter : BaseCharacter
     protected override void Start()
     {
         // Set player-specific values
-        maxHealth = playerMaxHealth;
         contactDamage = playerContactDamage;
+        damageableTags = new string[] {"Enemy"}; // Players can damage enemies
         
         // Get player components
         playerController = GetComponent<PlayerController>();
@@ -28,14 +28,16 @@ public class PlayerCharacter : BaseCharacter
         // Call base Start after setting values
         base.Start();
         
+        // Set player health bar color
+        if (healthBarFill != null)
+        {
+            healthBarFill.color = playerHealthBarColor;
+        }
+        
         // Subscribe to death event
         OnDeath += OnPlayerDeath;
     }
     
-    protected override Color GetHealthBarColor()
-    {
-        return playerHealthBarColor;
-    }
     
     void OnPlayerDeath()
     {

@@ -6,13 +6,13 @@ using UnityEngine;
 public class EnemyCharacter : BaseCharacter
 {
     [Header("Enemy Settings")]
-    public float enemyMaxHealth = 50f;
     public float enemyContactDamage = 15f; // Higher contact damage for enemies
     public float moveSpeed = 2f;
     public float detectionRange = 10f; // How far the enemy can detect the player
     
     [Header("Enemy Health Bar")]
     public Color enemyHealthBarColor = Color.red;
+    
     
     [Header("AI Behavior")]
     public bool followPlayer = true;
@@ -24,11 +24,14 @@ public class EnemyCharacter : BaseCharacter
     private Vector3 lastKnownPlayerPosition;
     private bool hasSeenPlayer = false;
     
+    // For animation system
+    private Vector2 currentMovementDirection = Vector2.zero;
+    
     protected override void Start()
     {
         // Set enemy-specific values
-        maxHealth = enemyMaxHealth;
         contactDamage = enemyContactDamage;
+        damageableTags = new string[] {"Allied", "Friendly"}; // Enemies can damage allied and friendly characters
         
         // Get rigidbody for movement
         enemyRigidbody = GetComponent<Rigidbody>();
@@ -38,7 +41,7 @@ public class EnemyCharacter : BaseCharacter
         }
         
         // Configure rigidbody
-        enemyRigidbody.useGravity = false;
+        enemyRigidbody.useGravity = true; // Enable gravity for enemies
         enemyRigidbody.freezeRotation = true;
         enemyRigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         
@@ -47,6 +50,12 @@ public class EnemyCharacter : BaseCharacter
         
         // Call base Start after setting values
         base.Start();
+        
+        // Set enemy health bar color
+        if (healthBarFill != null)
+        {
+            healthBarFill.color = enemyHealthBarColor;
+        }
         
         // Subscribe to death event
         OnDeath += OnEnemyDeath;
@@ -83,7 +92,12 @@ public class EnemyCharacter : BaseCharacter
     
     void UpdateAI()
     {
-        if (playerTarget == null) return;
+        if (playerTarget == null) 
+        {
+            // Reset movement direction when no target
+            currentMovementDirection = Vector2.zero;
+            return;
+        }
         
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
         
@@ -105,7 +119,13 @@ public class EnemyCharacter : BaseCharacter
             if (Vector3.Distance(transform.position, lastKnownPlayerPosition) < 1f)
             {
                 hasSeenPlayer = false;
+                currentMovementDirection = Vector2.zero; // Stop moving
             }
+        }
+        else
+        {
+            // No target in range and haven't seen player, stop moving
+            currentMovementDirection = Vector2.zero;
         }
     }
     
@@ -114,6 +134,9 @@ public class EnemyCharacter : BaseCharacter
         // Calculate direction to target
         Vector3 direction = (targetPosition - transform.position).normalized;
         direction.y = 0f; // Keep movement on horizontal plane
+        
+        // Store movement direction for animation system
+        currentMovementDirection = new Vector2(direction.x, direction.z);
         
         // Move the enemy
         if (enemyRigidbody != null)
@@ -127,18 +150,9 @@ public class EnemyCharacter : BaseCharacter
             transform.Translate(direction * moveSpeed * Time.deltaTime);
         }
         
-        // Optional: Rotate enemy to face movement direction
-        if (direction != Vector3.zero)
-        {
-            float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.AngleAxis(angle, Vector3.up);
-        }
+        // Note: Rotation is handled by sprite animations, not transform rotation
     }
     
-    protected override Color GetHealthBarColor()
-    {
-        return enemyHealthBarColor;
-    }
     
     void OnEnemyDeath()
     {
@@ -179,6 +193,12 @@ public class EnemyCharacter : BaseCharacter
     {
         if (playerTarget == null) return false;
         return GetDistanceToPlayer() <= detectionRange;
+    }
+    
+    // Method for animation system to get movement direction
+    public Vector2 GetMovementDirection()
+    {
+        return currentMovementDirection;
     }
     
     void OnDrawGizmosSelected()

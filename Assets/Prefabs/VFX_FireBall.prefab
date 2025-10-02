@@ -10125,12 +10125,18 @@ MonoBehaviour:
   speed: 100
   direction: {x: 0, y: 0, z: 1}
   lifetime: 3
-  destroyOnCollision: 0
+  destroyOnCollision: 1
   size: 1
+  sphereChildName: Sphere
   impactEffect: {fileID: 0}
-  collisionLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
+  collisionTags:
+  - Enemy
+  - Environment
+  - Obstacle
+  baseDamage: 20
+  chargedDamageMultiplier: 2
+  damageableTags:
+  - Enemy
 --- !u!135 &238915105374471679
 SphereCollider:
   m_ObjectHideFlags: 0

@@ -28,7 +28,7 @@ public class FireballLauncher : MonoBehaviour
     
     [Header("Shooting")]
     public float fireRate = 0.5f; // Time between shots (seconds)
-    public LayerMask fireballCollisionLayers = -1; // What the fireball can hit
+    public string[] fireballCollisionTags = {"Enemy", "Wall", "Obstacle"}; // What tags the fireball can hit
     
     [Header("Mouse Targeting")]
     public Camera targetCamera; // Camera for mouse-to-world conversion (auto-finds main camera)
@@ -39,6 +39,9 @@ public class FireballLauncher : MonoBehaviour
     [Header("Debug")]
     public bool showDebugRay = true;
     public bool enableDebugLog = false;
+    
+    [Header("Input Control")]
+    public bool enableMouseInput = false; // Disable mouse input for RTS mode
     
     private float lastShotTime = 0f;
     private InputAction shootAction;
@@ -94,7 +97,12 @@ public class FireballLauncher : MonoBehaviour
         shootAction = new InputAction("Shoot", binding: "<Mouse>/leftButton");
         shootAction.started += OnShootStarted;   // Mouse button pressed down
         shootAction.canceled += OnShootCanceled; // Mouse button released
-        shootAction.Enable();
+        
+        // Only enable if mouse input is allowed
+        if (enableMouseInput)
+        {
+            shootAction.Enable();
+        }
     }
     
     void Update()
@@ -360,7 +368,7 @@ public class FireballLauncher : MonoBehaviour
         if (fireballScript != null)
         {
             fireballScript.Initialize(lastTargetDirection, finalSpeed, fireballLifetime, finalSize);
-            fireballScript.SetCollisionLayers(fireballCollisionLayers);
+            fireballScript.SetCollisionTags(fireballCollisionTags);
         }
         
         // Re-enable physics movement
@@ -406,14 +414,16 @@ public class FireballLauncher : MonoBehaviour
         if (fireballScript != null)
         {
             fireballScript.Initialize(lastTargetDirection, fireballSpeed, fireballLifetime, fireballSize);
-            fireballScript.SetCollisionLayers(fireballCollisionLayers);
+            fireballScript.SetCollisionTags(fireballCollisionTags);
+            fireballScript.SetDamageableTags(new string[] {"Enemy"}); // Players can only damage enemies
         }
         else
         {
             // Fallback: Add Fireball script if the prefab doesn't have one
             fireballScript = fireball.AddComponent<Fireball>();
             fireballScript.Initialize(lastTargetDirection, fireballSpeed, fireballLifetime, fireballSize);
-            fireballScript.SetCollisionLayers(fireballCollisionLayers);
+            fireballScript.SetCollisionTags(fireballCollisionTags);
+            fireballScript.SetDamageableTags(new string[] {"Enemy"}); // Players can only damage enemies
         }
         
         // Orient the fireball to face the direction it's moving
@@ -424,6 +434,8 @@ public class FireballLauncher : MonoBehaviour
         
         // Update cooldown
         lastShotTime = Time.time;
+        
+        Debug.Log($"🚀 FIREBALL SHOT! Direction: {lastTargetDirection}, Speed: {fireballSpeed}, Position: {spawnPosition}");
         
         if (enableDebugLog)
         {
@@ -445,6 +457,13 @@ public class FireballLauncher : MonoBehaviour
     public void SetFireballLifetime(float lifetime)
     {
         fireballLifetime = lifetime;
+    }
+    
+    public void ShootFireballInDirection(Vector3 direction)
+    {
+        // Set the target direction and shoot
+        lastTargetDirection = direction.normalized;
+        ShootFireball();
     }
     
     public void SetFireRate(float rate)

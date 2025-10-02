@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// PlayerAnimationController handles 8-directional character animation
+/// PlayerAnimationController handles 8-directional character animation for both players and enemies
 /// Direction Mapping:
 /// 0 = Down, 1 = DownLeft, 2 = Left, 3 = UpLeft
 /// 4 = Up, 5 = UpRight, 6 = Right, 7 = DownRight
@@ -32,20 +32,28 @@ public class PlayerAnimationController : MonoBehaviour
     public float diagonalThreshold = 0.4f; // How much input needed to register diagonal movement
     
     [Header("Debug")]
-    public bool enableDebug = true;
+    public bool enableDebug = false;
     
     private PlayerController playerController;
+    private EnemyCharacter enemyCharacter;
     private Vector2 lastMovementDirection;
     private int currentDirection = 0; // 0=Down, 1=DownLeft, 2=Left, 3=UpLeft, 4=Up, 5=UpRight, 6=Right, 7=DownRight
     
+    // External movement input (for RTS movement)
+    private Vector2 externalMovementInput = Vector2.zero;
+    private bool useExternalInput = false;
+    
     void Start()
     {
-        // Get PlayerController from parent object
+        // Get PlayerController from parent object (for players)
         playerController = GetComponentInParent<PlayerController>();
         
-        if (playerController == null)
+        // Get EnemyCharacter from parent object (for enemies)
+        enemyCharacter = GetComponentInParent<EnemyCharacter>();
+        
+        if (playerController == null && enemyCharacter == null)
         {
-            Debug.LogWarning("No PlayerController found in parent objects of " + gameObject.name + ". Make sure this script is on a child of the GameObject with PlayerController.");
+            Debug.LogWarning("No PlayerController or EnemyCharacter found in parent objects of " + gameObject.name + ". Make sure this script is on a child of the GameObject with PlayerController or EnemyCharacter.");
         }
         
         if (animator == null)
@@ -61,10 +69,10 @@ public class PlayerAnimationController : MonoBehaviour
     
     void Update()
     {
-        if (animator == null || playerController == null) return;
+        if (animator == null || (playerController == null && enemyCharacter == null)) return;
         
-        // Get movement input from PlayerController
-        Vector2 movementInput = playerController.GetMovementInput();
+        // Get movement input from appropriate controller or external source
+        Vector2 movementInput = useExternalInput ? externalMovementInput : GetMovementInput();
         bool isMoving = movementInput.magnitude > directionThreshold;
         
         // Update animator parameters
@@ -97,6 +105,30 @@ public class PlayerAnimationController : MonoBehaviour
         {
             Debug.Log($"Movement Input: {movementInput} | Magnitude: {movementInput.magnitude:F3} | Threshold: {directionThreshold} | IsMoving: {isMoving} | Direction: {currentDirection} ({GetDirectionName(currentDirection)})");
         }
+    }
+    
+    Vector2 GetMovementInput()
+    {
+        if (playerController != null)
+        {
+            // Get movement from PlayerController
+            return playerController.GetMovementInput();
+        }
+        else if (enemyCharacter != null)
+        {
+            // Get movement from EnemyCharacter (AI movement)
+            return GetEnemyMovementInput();
+        }
+        
+        return Vector2.zero;
+    }
+    
+    Vector2 GetEnemyMovementInput()
+    {
+        // For enemies, get movement direction from EnemyCharacter
+        if (enemyCharacter == null) return Vector2.zero;
+        
+        return enemyCharacter.GetMovementDirection();
     }
     
     string GetDirectionName(int direction)
@@ -217,5 +249,23 @@ public class PlayerAnimationController : MonoBehaviour
             case 7: return new Vector2(1, -1); // DownRight
             default: return Vector2.zero;
         }
+    }
+    
+    /// <summary>
+    /// Set external movement input (for RTS movement system)
+    /// </summary>
+    public void SetMovementInput(Vector2 input)
+    {
+        externalMovementInput = input;
+        useExternalInput = true;
+    }
+    
+    /// <summary>
+    /// Clear external movement input and return to normal input
+    /// </summary>
+    public void ClearExternalInput()
+    {
+        useExternalInput = false;
+        externalMovementInput = Vector2.zero;
     }
 } 
