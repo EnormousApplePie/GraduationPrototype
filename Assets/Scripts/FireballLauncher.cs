@@ -29,6 +29,7 @@ public class FireballLauncher : MonoBehaviour
     [Header("Shooting")]
     public float fireRate = 0.5f; // Time between shots (seconds)
     public string[] fireballCollisionTags = {"Enemy", "Wall", "Obstacle"}; // What tags the fireball can hit
+    public string[] fireballDamageableTags = {"Enemy"}; // What tags the fireball can damage (defaults to Enemy only)
     
     [Header("Mouse Targeting")]
     public Camera targetCamera; // Camera for mouse-to-world conversion (auto-finds main camera)
@@ -415,7 +416,7 @@ public class FireballLauncher : MonoBehaviour
         {
             fireballScript.Initialize(lastTargetDirection, fireballSpeed, fireballLifetime, fireballSize);
             fireballScript.SetCollisionTags(fireballCollisionTags);
-            fireballScript.SetDamageableTags(new string[] {"Enemy"}); // Players can only damage enemies
+            fireballScript.SetDamageableTags(fireballDamageableTags); // Use configured damageable tags
         }
         else
         {
@@ -423,7 +424,7 @@ public class FireballLauncher : MonoBehaviour
             fireballScript = fireball.AddComponent<Fireball>();
             fireballScript.Initialize(lastTargetDirection, fireballSpeed, fireballLifetime, fireballSize);
             fireballScript.SetCollisionTags(fireballCollisionTags);
-            fireballScript.SetDamageableTags(new string[] {"Enemy"}); // Players can only damage enemies
+            fireballScript.SetDamageableTags(fireballDamageableTags); // Use configured damageable tags
         }
         
         // Orient the fireball to face the direction it's moving

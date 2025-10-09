@@ -38,3 +38,4 @@ public class CleanupMissingScripts : MonoBehaviour
         EditorUtility.SetDirty(FindObjectOfType<GameObject>());
     }
 }
+

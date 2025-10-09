@@ -71,8 +71,10 @@ public class RTSMovementController : MonoBehaviour
         {
             rb = gameObject.AddComponent<Rigidbody>();
         }
-        rb.useGravity = true;
-        rb.freezeRotation = true;
+		// Use kinematic-style horizontal movement on a flat plane
+		rb.useGravity = false;
+		rb.freezeRotation = true;
+		rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         
         // Create target line renderer
@@ -85,9 +87,24 @@ public class RTSMovementController : MonoBehaviour
     void Update()
     {
         HandleMouseInput();
-        HandleMovement();
         HandleAutoFire();
         UpdateTargetLine();
+    }
+    
+    void FixedUpdate()
+    {
+		// Aggressively stop any residual velocity when not moving
+		if (!hasTarget && rb != null)
+		{
+			if (rb.linearVelocity.sqrMagnitude > 0.01f || rb.angularVelocity.sqrMagnitude > 0.01f)
+			{
+				rb.linearVelocity = Vector3.zero;
+				rb.angularVelocity = Vector3.zero;
+			}
+		}
+
+		// Perform physics-based movement in FixedUpdate for stability
+		HandleMovement();
     }
     
     void HandleMouseInput()
@@ -169,10 +186,17 @@ public class RTSMovementController : MonoBehaviour
         return null;
     }
     
-    public void SetTargetPosition(Vector3 position)
+	public void SetTargetPosition(Vector3 position, bool clearEnemy = true)
     {
-        targetPosition = position;
+        // Lock Y to current position - only move on X-Z plane
+        targetPosition = new Vector3(position.x, transform.position.y, position.z);
         hasTarget = true;
+		
+		// Optionally clear enemy target when issuing a move command (used for ground clicks)
+		if (clearEnemy)
+		{
+			currentEnemyTarget = null;
+		}
     }
     
     public void SetEnemyTarget(Transform enemy)
@@ -180,10 +204,13 @@ public class RTSMovementController : MonoBehaviour
         currentEnemyTarget = enemy;
         
         // Set target position to move towards the enemy
-        if (enemy != null)
-        {
-            SetTargetPosition(enemy.position);
-        }
+		if (enemy != null)
+		{
+			// Lock Y to current position when setting enemy target
+			Vector3 enemyPos = new Vector3(enemy.position.x, transform.position.y, enemy.position.z);
+			// Do NOT clear the enemy here; we want to keep attacking when in range
+			SetTargetPosition(enemyPos, false);
+		}
     }
     
     public void ClearEnemyTarget()
@@ -209,23 +236,40 @@ public class RTSMovementController : MonoBehaviour
         if (!hasTarget) return;
         
         Vector3 direction = (targetPosition - transform.position).normalized;
-        float distance = Vector3.Distance(transform.position, targetPosition);
+        
+        // Calculate distance only on X-Z plane (ignore Y)
+        float distance = Vector2.Distance(
+            new Vector2(transform.position.x, transform.position.z),
+            new Vector2(targetPosition.x, targetPosition.z)
+        );
         
         // Check if we have an enemy target and are within shooting range
         if (currentEnemyTarget != null)
         {
-            float distanceToEnemy = Vector3.Distance(transform.position, currentEnemyTarget.position);
+            // Calculate distance to enemy on X-Z plane only
+            float distanceToEnemy = Vector2.Distance(
+                new Vector2(transform.position.x, transform.position.z),
+                new Vector2(currentEnemyTarget.position.x, currentEnemyTarget.position.z)
+            );
             
             // If we're within shooting range of the enemy, stop moving
             if (distanceToEnemy <= shootingDistance)
             {
                 hasTarget = false;
+                
+                // Aggressively stop
                 rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
                 
                 // Update animation controller with no movement
                 if (animationController != null)
                 {
                     animationController.SetMovementInput(Vector2.zero);
+                }
+                
+                if (showDebugInfo)
+                {
+                    Debug.Log($"{gameObject.name} in attack range. Stopped.");
                 }
                 return;
             }
@@ -235,19 +279,29 @@ public class RTSMovementController : MonoBehaviour
         if (distance <= stoppingDistance)
         {
             hasTarget = false;
+            
+            // Aggressively stop - set velocity to zero and wake rigidbody to ensure it processes
             rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
             
             // Update animation controller with no movement
             if (animationController != null)
             {
                 animationController.SetMovementInput(Vector2.zero);
             }
+            
+            if (showDebugInfo)
+            {
+                Debug.Log($"{gameObject.name} reached target. Stopped.");
+            }
             return;
         }
         
-        // Move towards target
-        Vector3 movement = direction * moveSpeed;
-        rb.linearVelocity = new Vector3(movement.x, rb.linearVelocity.y, movement.z);
+		// Move towards target using physics-friendly step
+		rb.WakeUp();
+		Vector3 step = direction * moveSpeed * Time.fixedDeltaTime;
+		Vector3 desiredPosition = transform.position + step;
+		rb.MovePosition(desiredPosition);
         
         // Update animation controller with movement direction
         if (animationController != null)
@@ -264,7 +318,11 @@ public class RTSMovementController : MonoBehaviour
         if (currentEnemyTarget == null) return;
         if (fireballLauncher == null) return;
         
-        float distanceToEnemy = Vector3.Distance(transform.position, currentEnemyTarget.position);
+        // Calculate distance to enemy on X-Z plane only
+        float distanceToEnemy = Vector2.Distance(
+            new Vector2(transform.position.x, transform.position.z),
+            new Vector2(currentEnemyTarget.position.x, currentEnemyTarget.position.z)
+        );
         
         // Check if enemy is in shooting range
         if (distanceToEnemy <= shootingDistance)

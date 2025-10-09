@@ -36,6 +36,7 @@ public class PlayerAnimationController : MonoBehaviour
     
     private PlayerController playerController;
     private EnemyCharacter enemyCharacter;
+    private FriendlyCharacter friendlyCharacter;
     private Vector2 lastMovementDirection;
     private int currentDirection = 0; // 0=Down, 1=DownLeft, 2=Left, 3=UpLeft, 4=Up, 5=UpRight, 6=Right, 7=DownRight
     
@@ -51,9 +52,15 @@ public class PlayerAnimationController : MonoBehaviour
         // Get EnemyCharacter from parent object (for enemies)
         enemyCharacter = GetComponentInParent<EnemyCharacter>();
         
-        if (playerController == null && enemyCharacter == null)
+        // Get FriendlyCharacter from parent object (for friendlies)
+        friendlyCharacter = GetComponentInParent<FriendlyCharacter>();
+        
+        if (playerController == null && enemyCharacter == null && friendlyCharacter == null)
         {
-            Debug.LogWarning("No PlayerController or EnemyCharacter found in parent objects of " + gameObject.name + ". Make sure this script is on a child of the GameObject with PlayerController or EnemyCharacter.");
+            if (enableDebug)
+            {
+                Debug.LogWarning("No PlayerController, EnemyCharacter, or FriendlyCharacter found in parent objects of " + gameObject.name + ". Make sure this script is on a child of the GameObject with one of these components.");
+            }
         }
         
         if (animator == null)
@@ -69,7 +76,8 @@ public class PlayerAnimationController : MonoBehaviour
     
     void Update()
     {
-        if (animator == null || (playerController == null && enemyCharacter == null)) return;
+        if (animator == null) return;
+        if (playerController == null && enemyCharacter == null && friendlyCharacter == null && !useExternalInput) return;
         
         // Get movement input from appropriate controller or external source
         Vector2 movementInput = useExternalInput ? externalMovementInput : GetMovementInput();
@@ -117,18 +125,16 @@ public class PlayerAnimationController : MonoBehaviour
         else if (enemyCharacter != null)
         {
             // Get movement from EnemyCharacter (AI movement)
-            return GetEnemyMovementInput();
+            return enemyCharacter.GetMovementDirection();
+        }
+        else if (friendlyCharacter != null)
+        {
+            // Get movement from FriendlyCharacter (AI movement)
+            // FriendlyCharacter updates animation through SetMovementInput, so return zero here
+            return Vector2.zero;
         }
         
         return Vector2.zero;
-    }
-    
-    Vector2 GetEnemyMovementInput()
-    {
-        // For enemies, get movement direction from EnemyCharacter
-        if (enemyCharacter == null) return Vector2.zero;
-        
-        return enemyCharacter.GetMovementDirection();
     }
     
     string GetDirectionName(int direction)
@@ -257,7 +263,12 @@ public class PlayerAnimationController : MonoBehaviour
     public void SetMovementInput(Vector2 input)
     {
         externalMovementInput = input;
-        useExternalInput = true;
+        
+        // Enable external input when RTS or Friendly characters are present
+        if (playerController == null || GetComponent<RTSMovementController>() != null || GetComponentInParent<RTSMovementController>() != null)
+        {
+            useExternalInput = true;
+        }
     }
     
     /// <summary>

@@ -6,6 +6,10 @@ using UnityEngine.UI;
 /// </summary>
 public class BaseCharacter : MonoBehaviour
 {
+    [Header("Identity")]
+    public string displayName = "Unit";
+    public int level = 1; // Level 1+; increases health only for now
+    public float healthBonusPerLevel = 0f; // Additive maxHealth per level above 1
     [Header("Health Settings")]
     public float maxHealth = 100f;
     public float currentHealth;
@@ -43,6 +47,11 @@ public class BaseCharacter : MonoBehaviour
     
     protected virtual void Start()
     {
+        // Apply simple level-based max health scaling
+        if (level > 1 && healthBonusPerLevel != 0f)
+        {
+            maxHealth += (level - 1) * healthBonusPerLevel;
+        }
         // Initialize health
         currentHealth = maxHealth;
         isDead = false;
@@ -56,7 +65,31 @@ public class BaseCharacter : MonoBehaviour
         
         // Initialize health bar
         UpdateHealthBar();
+        SetHealthBarColorByTag();
         
+    }
+    
+    void SetHealthBarColorByTag()
+    {
+        if (healthBarFill == null) return;
+        
+        // Set health bar color based on tag
+        if (gameObject.CompareTag("Player") || gameObject.CompareTag("Allied"))
+        {
+            healthBarFill.color = Color.blue;
+        }
+        else if (gameObject.CompareTag("Friendly"))
+        {
+            healthBarFill.color = Color.green;
+        }
+        else if (gameObject.CompareTag("Enemy"))
+        {
+            healthBarFill.color = Color.red;
+        }
+        else if (gameObject.CompareTag("Neutral"))
+        {
+            healthBarFill.color = Color.yellow;
+        }
     }
     
     void Update()
@@ -136,20 +169,7 @@ public class BaseCharacter : MonoBehaviour
         {
             float healthPercentage = currentHealth / maxHealth;
             healthBarFill.fillAmount = healthPercentage;
-            
-            // Update color based on health percentage
-            if (healthPercentage > 0.6f)
-            {
-                healthBarFill.color = Color.green;
-            }
-            else if (healthPercentage > 0.3f)
-            {
-                healthBarFill.color = Color.yellow;
-            }
-            else
-            {
-                healthBarFill.color = Color.red;
-            }
+            // Color is now set by tag in SetHealthBarColorByTag(), not by health percentage
         }
     }
     

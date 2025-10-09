@@ -8,6 +8,7 @@ TagManager:
   - Allied
   - Neutral
   - Environment
+  - Friendly
   layers:
   - Default
   - TransparentFX

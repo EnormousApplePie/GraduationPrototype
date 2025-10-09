@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class SimpleGlowEffect : MonoBehaviour
 {
+	public static bool globalHoverEnabled = false; // globally disable hover when false
     [Header("Hover Settings")]
     public Color glowColor = Color.yellow;
     public float glowSize = 0.05f; // Much smaller base size
@@ -20,6 +21,7 @@ public class SimpleGlowEffect : MonoBehaviour
     private SpriteRenderer[] spriteRenderers;
     private SpriteRenderer[] glowRenderers;
     private bool isHovered = false;
+    private bool isPersistentlyHighlighted = false;
     private Camera mainCamera;
     private float glowAnimationTime = 0f;
     
@@ -75,24 +77,28 @@ public class SimpleGlowEffect : MonoBehaviour
         }
     }
     
-    void Update()
+	void Update()
     {
-        if (!enableHoverEffect || mainCamera == null) return;
+		if (!enableHoverEffect || !globalHoverEnabled || mainCamera == null) return;
         
-        // Check if mouse is over this enemy
-        bool mouseOver = IsMouseOverEnemy();
-        
-        if (mouseOver && !isHovered)
+        // Don't update hover state if persistently highlighted
+        if (!isPersistentlyHighlighted)
         {
-            SetHovered(true);
-        }
-        else if (!mouseOver && isHovered)
-        {
-            SetHovered(false);
+            // Check if mouse is over this enemy
+            bool mouseOver = IsMouseOverEnemy();
+            
+            if (mouseOver && !isHovered)
+            {
+                SetHovered(true);
+            }
+            else if (!mouseOver && isHovered)
+            {
+                SetHovered(false);
+            }
         }
         
         // Update glow sprites to match the main sprite animation
-        if (isHovered)
+        if (isHovered || isPersistentlyHighlighted)
         {
             UpdateGlowSprites();
             
@@ -141,8 +147,18 @@ public class SimpleGlowEffect : MonoBehaviour
         }
     }
     
-    bool IsMouseOverEnemy()
+	    bool IsMouseOverEnemy()
     {
+        // Check if mouse is available
+        if (Mouse.current == null)
+        {
+            if (showDebugInfo)
+            {
+                Debug.LogWarning("Mouse.current is null in SimpleGlowEffect!");
+            }
+            return false;
+        }
+        
         // Get mouse position using new Input System
         Vector2 mousePos = Mouse.current.position.ReadValue();
         
@@ -181,12 +197,13 @@ public class SimpleGlowEffect : MonoBehaviour
             Debug.Log($"Enemy {gameObject.name} hovered: {hovered}");
         }
         
-        // Show or hide the glow
+        // Show or hide the glow (taking persistent highlight into account)
+        bool shouldShowGlow = hovered || isPersistentlyHighlighted;
         for (int i = 0; i < glowRenderers.Length; i++)
         {
             if (glowRenderers[i] != null)
             {
-                glowRenderers[i].enabled = hovered;
+                glowRenderers[i].enabled = shouldShowGlow;
             }
         }
     }
@@ -205,6 +222,37 @@ public class SimpleGlowEffect : MonoBehaviour
     public bool IsHovered()
     {
         return isHovered;
+    }
+    
+    /// <summary>
+    /// Set persistent highlight (stays on until manually disabled)
+    /// </summary>
+    public void SetPersistentHighlight(bool persistent)
+    {
+        isPersistentlyHighlighted = persistent;
+        
+        if (showDebugInfo)
+        {
+            Debug.Log($"Enemy {gameObject.name} persistent highlight: {persistent}");
+        }
+        
+        // Update glow visibility
+        bool shouldShowGlow = persistent || isHovered;
+        for (int i = 0; i < glowRenderers.Length; i++)
+        {
+            if (glowRenderers[i] != null)
+            {
+                glowRenderers[i].enabled = shouldShowGlow;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Check if this enemy is persistently highlighted
+    /// </summary>
+    public bool IsPersistentlyHighlighted()
+    {
+        return isPersistentlyHighlighted;
     }
     
     void OnDestroy()

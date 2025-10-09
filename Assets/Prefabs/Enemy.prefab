@@ -223,6 +223,7 @@ GameObject:
   - component: {fileID: 8630473253209176533}
   - component: {fileID: 1630484703048607828}
   - component: {fileID: 4825873236672635185}
+  - component: {fileID: 5252047243584499501}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -243,6 +244,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1405329990726095533}
   - {fileID: 3710524571059837314}
   - {fileID: 346437674837419026}
   m_Father: {fileID: 0}
@@ -298,11 +300,22 @@ MonoBehaviour:
   damageFlashDuration: 0.1
   showDebugInfo: 0
   enemyContactDamage: 15
-  moveSpeed: 2
+  moveSpeed: 5
   detectionRange: 10
   enemyHealthBarColor: {r: 1, g: 0, b: 0, a: 1}
   followPlayer: 1
   attackCooldown: 1.5
+  shootingDistance: 8
+  targetTags:
+  - Player
+  - Allied
+  - Friendly
+  fireballPrefab: {fileID: 5946741044515684490, guid: 3296fa05fdb1dc94db55a294d1b0f9f3, type: 3}
+  fireballSpawnPoint: {fileID: 0}
+  fireballSpeed: 15
+  fireballLifetime: 3
+  fireballSize: 1
+  fireRate: 2
 --- !u!114 &4825873236672635185
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -316,12 +329,45 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleGlowEffect
   glowColor: {r: 1, g: 0.1696375, b: 0, a: 1}
-  glowSize: 0.2
+  glowSize: 0.15
   glowLayers: 4
   enableHoverEffect: 1
   animateGlow: 1
   glowAnimationSpeed: 2
   showDebugInfo: 0
+--- !u!114 &5252047243584499501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6904130213923167972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2b356230f2e0f14d9fa9f536f7bb81b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SelectionCircle
+  baseRadius: 0.6
+  segments: 48
+  lineWidth: 0.06
+  hoverColor: {r: 1, g: 0.16862746, b: 0, a: 0.9}
+  selectedColor: {r: 1, g: 0.16862746, b: 0, a: 1}
+  heightOffset: 0.02
+  anchor: {fileID: 1405329990726095533}
+  useLocalOffset: 1
+  offsetXZ: {x: 0, y: 0}
+  offsetForward: 0
+  offsetRight: 0
+  rotationTarget: {fileID: 0}
+  matchSpriteRotation: 1
+  extraLocalEuler: {x: 0, y: 0, z: 0}
+  enablePulse: 1
+  pulseAmplitude: 0.08
+  pulseSpeed: 3
+  sortingLayerName: Default
+  sortingOrderOffsetBelowSprite: 10
+  enableHover: 1
+  enableDragHover: 1
 --- !u!1 &7120846871929138089
 GameObject:
   m_ObjectHideFlags: 0
@@ -499,3 +545,34 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &8908831109424514263
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1405329990726095533}
+  m_Layer: 0
+  m_Name: SelectionAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1405329990726095533
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8908831109424514263}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.3887943, y: -0, z: -0, w: 0.9213246}
+  m_LocalPosition: {x: 0, y: -0.348, z: -0.531}
+  m_LocalScale: {x: 3.17627, y: 3.17627, z: 3.17627}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 448116388942269558}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

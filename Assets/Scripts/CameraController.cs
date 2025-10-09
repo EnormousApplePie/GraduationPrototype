@@ -11,6 +11,7 @@ public class CameraController : MonoBehaviour
     public float zoomSpeed = 5f;
     public float minZoom = 3f;
     public float maxZoom = 20f;
+	public float zoomLerpSpeed = 8f; // smoothing speed for zoom transitions
     
     [Header("Player Following")]
     public Transform playerTarget;
@@ -25,6 +26,7 @@ public class CameraController : MonoBehaviour
     private bool isFollowingPlayer = false;
     private Vector3 lastMousePosition;
     private bool isDragging = false;
+	private bool isZooming = false;
     
     void Start()
     {
@@ -84,10 +86,51 @@ public class CameraController : MonoBehaviour
     
     void HandleMouseInput()
     {
-        // Double click to follow selected player (handled by SelectionManager)
-        // This is now handled by the SelectionManager, so we don't need double-click detection here
+        // Handle scroll wheel zoom
+        HandleZoom();
+    }
+    
+	void HandleZoom()
+    {
+        Mouse mouse = Mouse.current;
+        if (mouse == null) return;
         
-        // Zoom disabled as requested
+        // Get scroll wheel input
+        Vector2 scrollValue = mouse.scroll.ReadValue();
+        float scrollInput = scrollValue.y / 120f; // Normalize scroll value
+        
+		if (scrollInput != 0f)
+        {
+            // Move camera forward/backward in local space (respects rotation)
+            // Positive scroll = zoom in (move forward), negative = zoom out (move backward)
+            Vector3 zoomDirection = transform.forward;
+			Vector3 movement = zoomDirection * scrollInput * zoomSpeed;
+			
+			// Calculate new position
+			Vector3 newPosition = transform.position + movement;
+            
+            // Clamp based on distance from origin or height
+            // Using Y height as the limiting factor
+            float newHeight = newPosition.y;
+            if (newHeight >= minZoom && newHeight <= maxZoom)
+            {
+				// Smooth zoom: set target only and let MoveCamera ease towards it
+				targetPosition = newPosition;
+				isZooming = true;
+                
+                if (showDebugInfo)
+                {
+                    Debug.Log($"[CameraZoom] Moved in local forward direction. New position: {newPosition}, Height: {newHeight:F2}");
+                }
+            }
+            else
+            {
+				if (showDebugInfo)
+                {
+                    Debug.Log($"[CameraZoom] Zoom blocked - would exceed limits. Attempted height: {newHeight:F2} (min: {minZoom}, max: {maxZoom})");
+                }
+            }
+        }
     }
     
     void FollowPlayer()
@@ -162,10 +205,15 @@ public class CameraController : MonoBehaviour
             Vector3 desiredPosition = playerTarget.position + Vector3.back * followDistance;
             transform.position = Vector3.Lerp(transform.position, desiredPosition, followSpeed * Time.deltaTime);
         }
-        else
+		else
         {
-            // Normal camera movement
-            transform.position = Vector3.Lerp(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+			// Normal camera movement and smooth zoom easing
+			float lerpSpeed = isZooming ? zoomLerpSpeed : moveSpeed;
+			transform.position = Vector3.Lerp(transform.position, targetPosition, lerpSpeed * Time.deltaTime);
+			if (isZooming && (transform.position - targetPosition).sqrMagnitude < 0.0004f)
+			{
+				isZooming = false;
+			}
         }
     }
     
