@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
 /// <summary>
@@ -36,6 +37,7 @@ public class SelectionManager : MonoBehaviour
     private Texture2D selectionTexture;
     private Texture2D borderTexture;
 	private HashSet<GameObject> dragHoverUnits = new HashSet<GameObject>();
+    private bool blockDragThisInteraction = false; // when pointer is over UI
     
     void Start()
     {
@@ -86,12 +88,21 @@ public class SelectionManager : MonoBehaviour
         // Start drag selection
         if (mouse.leftButton.wasPressedThisFrame)
         {
-            dragStartPosition = mouse.position.ReadValue();
-            isDragging = true;
+            if (IsPointerOverUI())
+            {
+                // UI has priority; do not start drag selection
+                blockDragThisInteraction = true;
+                isDragging = false;
+            }
+            else
+            {
+                dragStartPosition = mouse.position.ReadValue();
+                isDragging = true;
+            }
         }
         
 		// Update drag position and live drag-hover feedback
-		if (isDragging)
+        if (isDragging)
 		{
 			dragCurrentPosition = mouse.position.ReadValue();
 			// Live update drag-hover circles while dragging
@@ -101,7 +112,12 @@ public class SelectionManager : MonoBehaviour
 		// End drag selection
         if (mouse.leftButton.wasReleasedThisFrame)
         {
-            if (isDragging)
+            if (blockDragThisInteraction)
+            {
+                // Click ended on UI; reset block flag and do nothing
+                blockDragThisInteraction = false;
+            }
+            else if (isDragging)
             {
                 Vector2 dragEndPosition = mouse.position.ReadValue();
                 float dragDistance = Vector2.Distance(dragStartPosition, dragEndPosition);
@@ -124,8 +140,17 @@ public class SelectionManager : MonoBehaviour
         // Right click for movement/attack
         if (mouse.rightButton.wasPressedThisFrame)
         {
-            HandleRightClick();
+            if (!IsPointerOverUI())
+            {
+                HandleRightClick();
+            }
         }
+    }
+
+    bool IsPointerOverUI()
+    {
+        if (EventSystem.current == null) return false;
+        return EventSystem.current.IsPointerOverGameObject();
     }
     
     void HandleLeftClick()

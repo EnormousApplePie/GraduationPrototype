@@ -15,7 +15,7 @@ public static class CreateRTSUI
 		// Create UnitButton prefab
 		GameObject unitButtonGO = new GameObject("UnitButton", typeof(RectTransform), typeof(Image), typeof(Button));
 		var unitBtnRT = unitButtonGO.GetComponent<RectTransform>();
-		unitBtnRT.sizeDelta = new Vector2(200, 60);
+		unitBtnRT.sizeDelta = new Vector2(81, 94);
 		unitBtnRT.anchorMin = new Vector2(0, 1);
 		unitBtnRT.anchorMax = new Vector2(0, 1);
 		unitBtnRT.pivot = new Vector2(0, 1);
@@ -25,7 +25,7 @@ public static class CreateRTSUI
 		GameObject txtGO = new GameObject("Text", typeof(RectTransform), typeof(Text));
 		txtGO.transform.SetParent(unitButtonGO.transform, false);
 		var txtRT = txtGO.GetComponent<RectTransform>();
-		txtRT.anchorMin = Vector2.zero; txtRT.anchorMax = Vector2.one; txtRT.offsetMin = new Vector2(10, 6); txtRT.offsetMax = new Vector2(-10, -6);
+		txtRT.anchorMin = Vector2.zero; txtRT.anchorMax = Vector2.one; txtRT.offsetMin = new Vector2(6, 6); txtRT.offsetMax = new Vector2(-6, -6);
 		var txt = txtGO.GetComponent<Text>();
 		txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 		txt.fontSize = 18; txt.alignment = TextAnchor.MiddleLeft; txt.color = Color.white; txt.text = "Unit\nLvl 1";
@@ -122,6 +122,67 @@ public static class CreateRTSUI
 		AssetDatabase.SaveAssets();
 		AssetDatabase.Refresh();
 		EditorUtility.DisplayDialog("RTS UI", "Created:\n- " + rtsUIPath + "\n- " + unitButtonPath, "OK");
+	}
+
+	[MenuItem("Tools/RTS UI/Create Game Over UI Prefab")]
+	public static void CreateGameOverUIPrefab()
+	{
+		string uiFolder = "Assets/Prefabs/UI";
+		if (!AssetDatabase.IsValidFolder("Assets/Prefabs")) AssetDatabase.CreateFolder("Assets", "Prefabs");
+		if (!AssetDatabase.IsValidFolder(uiFolder)) AssetDatabase.CreateFolder("Assets/Prefabs", "UI");
+
+		// Canvas root
+		GameObject canvasGO = new GameObject("GameOverUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+		var canvas = canvasGO.GetComponent<Canvas>();
+		canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+		var scaler = canvasGO.GetComponent<CanvasScaler>();
+		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+		scaler.referenceResolution = new Vector2(1920, 1080);
+		scaler.matchWidthOrHeight = 0.5f;
+
+		// Dim background
+		GameObject bg = new GameObject("Background", typeof(RectTransform), typeof(Image));
+		bg.transform.SetParent(canvasGO.transform, false);
+		var bgImg = bg.GetComponent<Image>();
+		bgImg.color = new Color(0f, 0f, 0f, 0.7f);
+		var bgRT = (RectTransform)bg.transform;
+		bgRT.anchorMin = Vector2.zero; bgRT.anchorMax = Vector2.one; bgRT.offsetMin = Vector2.zero; bgRT.offsetMax = Vector2.zero;
+
+		// Title
+		GameObject title = new GameObject("Title", typeof(RectTransform), typeof(Text));
+		title.transform.SetParent(bg.transform, false);
+		var titleTxt = title.GetComponent<Text>();
+		titleTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+		titleTxt.text = "End of prototype";
+		titleTxt.fontSize = 56; titleTxt.alignment = TextAnchor.MiddleCenter; titleTxt.color = Color.white;
+		var titleRT = (RectTransform)title.transform;
+		titleRT.anchorMin = new Vector2(0.5f, 0.65f); titleRT.anchorMax = new Vector2(0.5f, 0.65f);
+		titleRT.pivot = new Vector2(0.5f, 0.5f); titleRT.sizeDelta = new Vector2(900, 140);
+
+		// Reset button
+		GameObject btn = new GameObject("ResetButton", typeof(RectTransform), typeof(Image), typeof(Button), typeof(ResetLevelButton));
+		btn.transform.SetParent(bg.transform, false);
+		var btnRT = (RectTransform)btn.transform;
+		btnRT.anchorMin = new Vector2(0.5f, 0.45f); btnRT.anchorMax = new Vector2(0.5f, 0.45f);
+		btnRT.pivot = new Vector2(0.5f, 0.5f); btnRT.sizeDelta = new Vector2(260, 68);
+		var btnImg = btn.GetComponent<Image>(); btnImg.color = new Color(0.2f, 0.6f, 0.2f, 0.9f);
+		var button = btn.GetComponent<Button>();
+		button.onClick.AddListener(() => btn.GetComponent<ResetLevelButton>().OnClickReset());
+		// Label
+		GameObject btnLabel = new GameObject("Text", typeof(RectTransform), typeof(Text));
+		btnLabel.transform.SetParent(btn.transform, false);
+		var lbl = btnLabel.GetComponent<Text>();
+		lbl.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+		lbl.text = "Reset Level";
+		lbl.fontSize = 28; lbl.alignment = TextAnchor.MiddleCenter; lbl.color = Color.white;
+		var lblRT = (RectTransform)btnLabel.transform; lblRT.anchorMin = Vector2.zero; lblRT.anchorMax = Vector2.one; lblRT.offsetMin = Vector2.zero; lblRT.offsetMax = Vector2.zero;
+
+		// Save prefab
+		string path = uiFolder + "/GameOverUI.prefab";
+		PrefabUtility.SaveAsPrefabAsset(canvasGO, path);
+		Object.DestroyImmediate(canvasGO);
+		AssetDatabase.SaveAssets(); AssetDatabase.Refresh();
+		EditorUtility.DisplayDialog("RTS UI", "Created:\n- " + path, "OK");
 	}
 }
 

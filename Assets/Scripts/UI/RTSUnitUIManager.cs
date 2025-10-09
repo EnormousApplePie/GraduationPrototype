@@ -20,7 +20,8 @@ public class RTSUnitUIManager : MonoBehaviour
 
 	[Header("Layout")] 
 	public int maxColumns = 1;
-	public float cellHeight = 60f;
+	public float cellWidth = 81f;
+	public float cellHeight = 94f;
 	public float cellSpacing = 8f;
 
 	private readonly List<GameObject> pooledButtons = new List<GameObject>();
@@ -79,10 +80,12 @@ public class RTSUnitUIManager : MonoBehaviour
 			pooledButtons[i].SetActive(active);
 			if (!active) continue;
 			var u = units[i];
-			// Position
-			int row = i; // single column for now
+			// Position and size with columns
+			int col = Mathf.Clamp(maxColumns, 1, 32) > 1 ? (i % Mathf.Clamp(maxColumns, 1, 32)) : 0;
+			int row = Mathf.Clamp(maxColumns, 1, 32) > 1 ? (i / Mathf.Clamp(maxColumns, 1, 32)) : i;
 			RectTransform rt = (RectTransform)pooledButtons[i].transform;
-			rt.anchoredPosition = new Vector2(0f, -row * (cellHeight + cellSpacing));
+			rt.sizeDelta = new Vector2(cellWidth, cellHeight);
+			rt.anchoredPosition = new Vector2(col * (cellWidth + cellSpacing), -row * (cellHeight + cellSpacing));
 			// Populate
 			var text = pooledButtons[i].GetComponentInChildren<Text>();
 			if (text != null)
@@ -121,9 +124,22 @@ public class RTSUnitUIManager : MonoBehaviour
 			rt.anchorMin = new Vector2(0f, 1f);
 			rt.anchorMax = new Vector2(0f, 1f);
 			rt.pivot = new Vector2(0f, 1f);
-			rt.sizeDelta = new Vector2(leftGridRoot.rect.width, cellHeight);
+			rt.sizeDelta = new Vector2(cellWidth, cellHeight);
 			pooledButtons.Add(go);
 		}
+	}
+
+	void LateUpdate()
+	{
+		// Adjust content size so ScrollRect can scroll properly
+		if (leftGridRoot == null) return;
+		int activeCount = 0;
+		for (int i = 0; i < pooledButtons.Count; i++) if (pooledButtons[i].activeSelf) activeCount++;
+		int columns = Mathf.Clamp(maxColumns, 1, 32);
+		int rows = Mathf.CeilToInt(activeCount / (float)columns);
+		float width = columns * cellWidth + (columns - 1) * cellSpacing;
+		float height = rows * cellHeight + Mathf.Max(0, rows - 1) * cellSpacing;
+		leftGridRoot.sizeDelta = new Vector2(Mathf.Max(leftGridRoot.sizeDelta.x, width), height);
 	}
 
 	void CollectUnitsWithTag(string tag, List<BaseCharacter> list)
